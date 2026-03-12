@@ -1,11 +1,17 @@
 #!/bin/sh
 
+echo "Username for admin user on system"
+read username
+
+echo "Public ssh key"
+read public_key
+
 echo "Input SSID"
 read ssid_chosen
 
 echo "Input SSID Password"
 read ssid_password
-setup_wifi "/etc/wpa_supplicant/wpa_supplicant.conf" $ssid_chosen $ssid_password 
+setup_wifi "/etc/wpa_supplicant/wpa_supplicant.conf" $ssid_chosen $ssid_password
 
 rc-update add wpa_supplicant boot
 rc-update add wpa_cli boot
@@ -17,15 +23,15 @@ echo "Storage device to partition"
 read StorageDevice
 
 create_partition() {
-  
+
 }
 
 setup_wifi() {
-   FileLocation=$1
-   SSID=$2
-   Password=$3
-   FileContent=$(wpa_passphrase $SSID $Password)
-   cat << EOF >   $FileLocation
+  FileLocation=$1
+  SSID=$2
+  Password=$3
+  FileContent=$(wpa_passphrase $SSID $Password)
+  cat <<EOF >$FileLocation
    $FileContent
 EOF
 }
@@ -37,11 +43,11 @@ EOF
 
 # Format partitions with ext4
 apk add e2fsprogs
-mkfs.ext4 -O ^has_journal,^64bit -L LBU    /dev/"$StorageDevice"2
-mkfs.ext4 -O ^has_journal,^64bit -L HOME   /dev/"$StorageDevice"3
+mkfs.ext4 -O ^has_journal,^64bit -L LBU /dev/"$StorageDevice"2
+mkfs.ext4 -O ^has_journal,^64bit -L HOME /dev/"$StorageDevice"3
 
-echo "/dev/disk/by-label/LBU    /media/       ext4 noatime,ro 0 0" >> /etc/fstab
-echo "/dev/disk/by-label/HOME   /home/        ext4 noatime,ro 0 0" >> /etc/fstab 
+echo "/dev/disk/by-label/LBU    /media/       ext4 noatime,ro 0 0" >>/etc/fstab
+echo "/dev/disk/by-label/HOME   /home/        ext4 noatime,ro 0 0" >>/etc/fstab
 # home directory on first boot does not have data, safe to mount
 
 mount -a
@@ -49,9 +55,8 @@ mount -a
 mkdir /media/LBU
 mkdir /media/CACHE
 
-
 # DO THIS LAST
-setup-alpine -f << EOF
+setup-alpine -f <<EOF
 # Example answer file for setup-alpine script
 # If you don't want to use a certain option, then comment it out
 
@@ -92,12 +97,13 @@ PROXYOPTS=none
 APKREPOSOPTS="-f -c"
 
 # Create admin user
-USEROPTS="-a -u -g audio,video,netdev,wheel userman"
-USERSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF0aTwAzIc/Tz+9w0DPhjnJy+j3/z57XQMOdpEgJ44yN userman@localhost.localdomain"
-# USERSSHKEY="https://example.com/juser.keys"
+USEROPTS="-a -u -g audio,video,netdev,wheel $username"
+USERSSHKEY="$public_key"
 
 # Install Openssh
 SSHDOPTS=openssh
+
+# Set this if you wan root ssh access enabled
 #ROOTSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
 #ROOTSSHKEY="https://example.com/juser.keys"
 
